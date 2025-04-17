@@ -1,5 +1,7 @@
 ## Architecture Overview
 
+![Architecture Design](./design-diagrams/architecture.png)
+
 This project implements a comprehensive cloud operations architecture that consists of the following components:
 
 - **VPC Infrastructure**: Secure network setup with public and private subnets across multiple availability zones
