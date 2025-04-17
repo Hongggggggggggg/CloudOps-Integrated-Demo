@@ -1,0 +1,11 @@
+- name: Common Tasks
+  hosts: all
+  become: true # Use sudo
+  roles:
+    - common
+
+- name: Web Server Tasks
+  hosts: role_web
+  become: true # Use sudo
+  roles:
+    - webserver

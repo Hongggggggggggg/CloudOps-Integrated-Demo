@@ -27,3 +27,9 @@ variable "private_azs" {
   description = "value of the private availability zones"
   type = list(string)
 }
+
+variable "region" {
+  description = "value of the region"
+  type = string
+  default = "ap-northeast-1"
+}
