@@ -1,0 +1,23 @@
+# Terraform files to ignore
+terraform/**/.terraform/          # Ignore terraform directory where modules are installed
+terraform/**/.terraform.lock.hcl  # Ignore terraform dependency lock file
+terraform/**/.terraformrc         # Ignore terraform runtime config
+terraform/**/.terraform.d/        # Ignore terraform plugin directory
+terraform/**/.tfplan              # Ignore terraform plan files
+terraform/**/.tfstate             # Ignore terraform state files
+terraform/**/.tfvars.json         # Ignore terraform variable files in JSON format
+terraform/**/.tfstate.backup      # Ignore terraform state backup files
+
+# Ignore any dot files in terraform directories
+terraform/**/.*
+
+# macOS system files
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Common backup, log and temporary files
+*.log
+*.bak
+*.tmp
+*~
