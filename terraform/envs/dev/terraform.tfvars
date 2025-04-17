@@ -16,6 +16,10 @@ user_data_web = <<EOF
     systemctl start httpd
     systemctl enable httpd
     echo "<h1>Hello from EC2 instance!</h1>" > /var/www/html/index.html
+    amazon-linux-extras install -y python3.8
+    alternatives --set python3 /usr/bin/python3.8
+    python3.8 -m pip install --upgrade pip
+    python3.8 -m pip install pywinrm
     EOF
 
 user_data_app = <<EOF

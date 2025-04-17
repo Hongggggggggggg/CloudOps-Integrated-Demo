@@ -1,0 +1,47 @@
+- name: Add Node.js Repository
+  ansible.builtin.get_url:
+    url: https://rpm.nodesource.com/setup_16.x
+    dest: /tmp/setup_node.sh
+    mode: '0755'
+
+- name: Setup Node.js Repository
+  ansible.builtin.shell: /tmp/setup_node.sh
+  args:
+    creates: /etc/yum.repos.d/nodesource*.repo
+    executable: /bin/bash
+  register: node_repo_result
+  changed_when: node_repo_result.rc == 0
+
+- name: Install Node.js
+  ansible.builtin.package:
+    name: nodejs
+    state: present
+
+- name: Copy application file
+  ansible.builtin.copy:
+    src: app.js
+    dest: /home/ubuntu/app.js
+    mode: '0755'
+
+- name: Create application systemd service
+  ansible.builtin.copy:
+    dest: /etc/systemd/system/myapp.service
+    content: |
+      [Unit]
+      Description=My Node App
+      After=network.target
+
+      [Service]
+      User=ubuntu
+      ExecStart=/usr/bin/node /home/ubuntu/app.js
+      Restart=always
+
+      [Install]
+      WantedBy=multi-user.target
+    mode: '0644'
+
+- name: Start and enable Node.js app
+  ansible.builtin.systemd:
+    name: myapp
+    state: started
+    enabled: true

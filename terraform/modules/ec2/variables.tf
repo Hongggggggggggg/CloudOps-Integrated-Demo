@@ -49,3 +49,13 @@ variable "iam_instance_profile_name" {
   description = "IAM instance profile name for the EC2 instance"
   type        = string
 }
+
+variable "environment" {
+    description = "Environment tag for the EC2 instance"
+    type        = string
+}
+
+variable "role" {
+    description = "Role tag for the EC2 instance"
+    type        = string
+}

@@ -79,7 +79,7 @@ resource "aws_security_group" "public_sg" {
     from_port        = 22
     to_port          = 22
     protocol         = "tcp"
-    cidr_blocks      = ["203.0.113.0/24"]
+    cidr_blocks      = ["61.230.143.249/32"] # Replace with your IP
   }
 
   egress {
@@ -110,6 +110,13 @@ resource "aws_security_group" "private_sg" {
     to_port          = 22
     protocol         = "tcp"
     security_groups  = [aws_security_group.public_sg.id]
+  }
+
+  ingress {
+    from_port         = 443
+    to_port           = 443
+    protocol          = "tcp"
+    self              = true
   }
 
   egress {

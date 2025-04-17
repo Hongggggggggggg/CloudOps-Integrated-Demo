@@ -21,6 +21,8 @@ resource "aws_launch_template" "ec2_template" {
 
       tags = {
         Name = var.instance_name
+        Environment = var.environment
+        Role = var.role   
       }
     }
 }
@@ -37,5 +39,7 @@ resource "aws_instance" "this" {
 
   tags = {
     Name = var.instance_name
+    Environment = var.environment
+    Role = var.role
   }
 }

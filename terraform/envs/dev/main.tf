@@ -25,7 +25,8 @@ module "nat_instance" {
 module "web_ec2" {
   source  = "../../modules/ec2"
   for_each = local.public_subnets_map
-
+  environment = "dev"
+  role = "web"
   template_name               = "web-template"
   image_id                    = var.ami_id
   instance_type               = var.instance_type
@@ -41,7 +42,8 @@ module "web_ec2" {
 module "app_ec2" {
   source  = "../../modules/ec2"
   for_each = local.private_subnets_map
-
+  environment = "dev"
+  role = "app"
   template_name               = "app-template"
   image_id                    = var.ami_id
   instance_type               = var.instance_type

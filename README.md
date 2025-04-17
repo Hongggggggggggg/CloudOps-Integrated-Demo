@@ -83,6 +83,47 @@ After confirmation, Terraform will remove all resources that were created.
 
 ### Configuring Systems with Ansible
 
+Ansible is used to configure EC2 instances that have been deployed by Terraform. We use dynamic inventory to automatically discover and categorize AWS resources.
+
+1. Ensure AWS credentials are set up so Ansible can access your AWS environment:
+
+```bash
+aws configure
+```
+
+2. Make sure your SSH key is in the correct location (`~/.ssh/demo-key-pair.pem`) and has the appropriate permissions:
+
+```bash
+chmod 400 ~/.ssh/demo-key-pair.pem
+```
+
+3. Navigate to the Ansible directory:
+
+```bash
+cd ansible
+```
+
+4. Install the necessary dependencies:
+
+```bash
+pip install ansible boto3 botocore
+```
+
+5. Test the dynamic inventory to confirm it can find your EC2 instances:
+
+```bash
+ansible-inventory --graph
+```
+
+6. Run the playbook to configure all systems:
+
+```bash
+ansible-playbook playbooks/site.yml
+```
+
+This will perform the following operations:
+- Apply common configuration (installing basic packages) to all hosts
+- Install and configure Apache on servers tagged with the Web role
 
 ### Accessing Monitoring
 
