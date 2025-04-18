@@ -1,0 +1,74 @@
+---
+- name: Ensure required directories exist
+  file:
+    path: "{{ item }}"
+    state: directory
+    mode: '0755'
+  with_items:
+    - /opt/prometheus
+    - /etc/prometheus
+    - /etc/prometheus/rules
+    - /var/lib/prometheus
+
+- name: Install required packages (Debian/Ubuntu)
+  ansible.builtin.apt:
+    name:
+      - wget
+      - tar
+    state: present
+  when: ansible_os_family == "Debian"
+
+- name: Install required packages (RedHat/CentOS/Amazon Linux with yum)
+  ansible.builtin.yum:
+    name:
+      - wget
+      - tar
+    state: present
+  when: (ansible_os_family == "RedHat" or ansible_distribution == "Amazon") and ansible_pkg_mgr == "yum"
+
+- name: Install required packages (RedHat/CentOS/Amazon Linux with dnf)
+  ansible.builtin.dnf:
+    name:
+      - wget
+      - tar
+    state: present
+    use_backend: dnf4
+  when: (ansible_os_family == "RedHat" or ansible_distribution == "Amazon") and ansible_pkg_mgr == "dnf"
+
+- name: Download and extract Prometheus
+  unarchive:
+    src: https://github.com/prometheus/prometheus/releases/download/v2.43.0/prometheus-2.43.0.linux-amd64.tar.gz
+    dest: /tmp
+    remote_src: yes
+    creates: /tmp/prometheus-2.43.0.linux-amd64
+
+- name: Copy Prometheus binaries
+  copy:
+    src: "/tmp/prometheus-2.43.0.linux-amd64/{{ item }}"
+    dest: "/usr/local/bin/{{ item }}"
+    remote_src: yes
+    mode: '0755'
+  with_items:
+    - prometheus
+    - promtool
+
+- name: Copy Prometheus configuration file
+  template:
+    src: prometheus.yml.j2
+    dest: /etc/prometheus/prometheus.yml
+    mode: '0644'
+  notify: restart prometheus
+
+- name: Create Prometheus systemd service
+  template:
+    src: prometheus.service.j2
+    dest: /etc/systemd/system/prometheus.service
+    mode: '0644'
+  notify: restart prometheus
+
+- name: Enable and start Prometheus service
+  systemd:
+    name: prometheus
+    enabled: yes
+    state: started
+    daemon_reload: yes

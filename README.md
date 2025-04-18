@@ -127,3 +127,45 @@ This will perform the following operations:
 
 ### Accessing Monitoring
 
+After deploying the infrastructure and running the Ansible playbook, you can access the monitoring stack:
+
+1. **Grafana Dashboard**: 
+   - URL: `http://<web_server_ip>:3000`
+   - Grafana provides visualization of all metrics collected by Prometheus
+
+2. **Prometheus Interface**:
+   - URL: `http://<web_server_ip>:9090`
+   - Prometheus collects metrics from all configured targets
+   - You can run PromQL queries to analyze system performance
+
+3. **Node Exporter Metrics**:
+   - URL: `http://<web_server_ip>:9100/metrics`
+   - Raw metrics from the Node Exporter (normally accessed via Prometheus)
+
+To find your web server's public IP address, run:
+
+```bash
+cd terraform/envs/dev
+terraform output web_public_ips
+```
+
+### Monitoring Overview
+
+Our monitoring solution consists of:
+
+1. **Prometheus**: An open-source monitoring and alerting toolkit
+   - Collects metrics from configured targets
+   - Stores time series data
+   - Provides a query language (PromQL) for data analysis
+
+2. **Node Exporter**: Installed on all servers to expose system metrics
+   - Hardware metrics (CPU, memory, disk usage)
+   - Network statistics
+   - Process information
+
+3. **Grafana**: Visualization platform for metrics
+   - Pre-configured dashboards for server monitoring
+   - Customizable visualizations
+   - Support for alerts (in production setups)
+
+The monitoring system is configured to collect metrics from all EC2 instances in the deployment. This provides comprehensive visibility into the health and performance of your infrastructure.

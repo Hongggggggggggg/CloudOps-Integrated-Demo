@@ -1,0 +1,23 @@
+---
+- name: Include Prometheus tasks
+  include_tasks: prometheus.yml
+
+- name: Include Grafana tasks
+  include_tasks: grafana.yml
+
+- name: Create demo dashboard directory
+  file:
+    path: /var/lib/grafana/dashboards
+    state: directory
+    owner: grafana
+    group: grafana
+    mode: '0755'
+
+- name: Copy server monitoring dashboard
+  copy:
+    src: dashboards/server-monitoring.json
+    dest: /var/lib/grafana/dashboards/server-monitoring.json
+    owner: grafana
+    group: grafana
+    mode: '0644'
+  notify: restart grafana

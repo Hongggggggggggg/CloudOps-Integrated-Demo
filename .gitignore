@@ -7,7 +7,9 @@ terraform/**/.tfplan              # Ignore terraform plan files
 terraform/**/.tfstate             # Ignore terraform state files
 terraform/**/.tfvars.json         # Ignore terraform variable files in JSON format
 terraform/**/.tfstate.backup      # Ignore terraform state backup files
+terraform/envs/dev/terraform.tfstate.backup
 terraform/terraform.tfstate
+terraform/envs/dev/terraform.tfstate
 
 # Ignore any dot files in terraform directories
 terraform/**/.*

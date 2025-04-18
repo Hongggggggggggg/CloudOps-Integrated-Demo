@@ -3,9 +3,16 @@
   become: true # Use sudo
   roles:
     - common
+    - node_exporter
 
 - name: Web Server Tasks
   hosts: role_web
   become: true # Use sudo
   roles:
     - webserver
+
+- name: Monitoring Server Setup
+  hosts: role_web[0]
+  become: true # Use sudo
+  roles:
+    - monitoring
