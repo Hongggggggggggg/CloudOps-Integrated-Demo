@@ -79,7 +79,31 @@ resource "aws_security_group" "public_sg" {
     from_port        = 22
     to_port          = 22
     protocol         = "tcp"
-    cidr_blocks      = ["61.230.143.249/32"] # Replace with your IP
+    cidr_blocks      = ["1.162.37.234/32"] # Replace with your IP
+  }
+  
+  ingress {
+    from_port        = 3000
+    to_port          = 3000
+    protocol         = "tcp"
+    cidr_blocks      = ["0.0.0.0/0"]
+    description      = "Grafana UI"
+  }
+  
+  ingress {
+    from_port        = 9090
+    to_port          = 9090
+    protocol         = "tcp"
+    cidr_blocks      = ["0.0.0.0/0"]
+    description      = "Prometheus UI"
+  }
+  
+  ingress {
+    from_port        = 9100
+    to_port          = 9100
+    protocol         = "tcp"
+    cidr_blocks      = ["0.0.0.0/0"]
+    description      = "Node Exporter metrics"
   }
 
   egress {

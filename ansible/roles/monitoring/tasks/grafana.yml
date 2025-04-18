@@ -1,0 +1,207 @@
+---
+- name: Add Grafana GPG key
+  apt_key:
+    url: https://packages.grafana.com/gpg.key
+    state: present
+  when: ansible_os_family == "Debian"
+
+- name: Add Grafana repository
+  apt_repository:
+    repo: deb https://packages.grafana.com/oss/deb stable main
+    state: present
+    filename: grafana
+  when: ansible_os_family == "Debian"
+
+- name: Install Grafana (Debian/Ubuntu)
+  ansible.builtin.apt:
+    name: grafana
+    state: present
+  when: ansible_os_family == "Debian"
+
+- name: Add Grafana YUM repository (RHEL/CentOS/Amazon)
+  ansible.builtin.yum_repository:
+    name: grafana
+    description: Grafana repository
+    baseurl: https://packages.grafana.com/oss/rpm
+    gpgkey: https://packages.grafana.com/gpg.key
+    gpgcheck: 1
+    enabled: 1
+  when: ansible_os_family == "RedHat" or ansible_distribution == "Amazon"
+
+- name: Install Grafana (RedHat/CentOS/Amazon Linux with yum)
+  ansible.builtin.yum:
+    name: grafana
+    state: present
+  when: (ansible_os_family == "RedHat" or ansible_distribution == "Amazon") and ansible_pkg_mgr == "yum"
+
+- name: Install Grafana (RedHat/CentOS/Amazon Linux with dnf)
+  ansible.builtin.dnf:
+    name: grafana
+    state: present
+    use_backend: dnf4
+  when: (ansible_os_family == "RedHat" or ansible_distribution == "Amazon") and ansible_pkg_mgr == "dnf"
+
+- name: Check if Grafana was installed
+  ansible.builtin.command: rpm -q grafana
+  register: grafana_installed
+  changed_when: false
+  failed_when: false
+  when: ansible_os_family == "RedHat" or ansible_distribution == "Amazon"
+
+- name: Check if grafana user exists
+  ansible.builtin.getent:
+    database: passwd
+    key: grafana
+  register: grafana_user_exists
+  ignore_errors: true
+
+- name: Create grafana user if not exists
+  ansible.builtin.user:
+    name: grafana
+    system: yes
+    shell: /sbin/nologin
+    comment: "Grafana User"
+    createhome: no
+  when: grafana_user_exists.failed is defined and grafana_user_exists.failed
+
+- name: Create Grafana directories
+  file:
+    path: "{{ item }}"
+    state: directory
+    mode: '0755'
+    owner: grafana
+    group: grafana
+  with_items:
+    - /var/lib/grafana/dashboards
+    - /etc/grafana/provisioning/dashboards
+    - /etc/grafana/provisioning/datasources
+    - /usr/share/grafana
+    - /var/log/grafana
+
+- name: Copy Grafana datasources provisioning configuration
+  template:
+    src: datasources.yml.j2
+    dest: /etc/grafana/provisioning/datasources/datasources.yml
+    owner: grafana
+    group: grafana
+    mode: '0644'
+  notify: restart grafana
+
+- name: Copy Grafana dashboards provisioning configuration
+  template:
+    src: dashboards.yml.j2
+    dest: /etc/grafana/provisioning/dashboards/dashboards.yml
+    owner: grafana
+    group: grafana
+    mode: '0644'
+  notify: restart grafana
+
+- name: Copy Grafana dashboards
+  copy:
+    src: dashboards/
+    dest: /var/lib/grafana/dashboards/
+    owner: grafana
+    group: grafana
+    mode: '0644'
+  notify: restart grafana
+
+- name: Check Grafana service file exists (for RHEL/CentOS/Amazon)
+  ansible.builtin.stat:
+    path: "/usr/lib/systemd/system/grafana.service"
+  register: grafana_service_file
+  when: ansible_os_family == "RedHat" or ansible_distribution == "Amazon"
+
+- name: Check Grafana server service file exists (for RHEL/CentOS/Amazon)
+  ansible.builtin.stat:
+    path: "/usr/lib/systemd/system/grafana-server.service"
+  register: grafana_server_service_file
+  when: ansible_os_family == "RedHat" or ansible_distribution == "Amazon"
+
+- name: Display service file status
+  ansible.builtin.debug:
+    msg: "Grafana service file exists: {{ grafana_service_file.stat.exists | default(false) }}. Grafana-server service file exists: {{ grafana_server_service_file.stat.exists | default(false) }}"
+  when: ansible_os_family == "RedHat" or ansible_distribution == "Amazon"
+
+- name: Create Grafana service file for RedHat/CentOS/Amazon Linux if not exists
+  ansible.builtin.copy:
+    content: |
+      [Unit]
+      Description=Grafana instance
+      Documentation=http://docs.grafana.org
+      Wants=network-online.target
+      After=network-online.target
+
+      [Service]
+      Type=simple
+      WorkingDirectory=/usr/share/grafana
+      User=grafana
+      Group=grafana
+      ExecStart=/usr/sbin/grafana-server \
+                --config=/etc/grafana/grafana.ini \
+                --homepath=/usr/share/grafana \
+                --packaging=rpm \
+                cfg:default.paths.logs=/var/log/grafana \
+                cfg:default.paths.data=/var/lib/grafana \
+                cfg:default.paths.plugins=/var/lib/grafana/plugins \
+                cfg:default.paths.provisioning=/etc/grafana/provisioning
+      Restart=on-failure
+      RestartSec=10s
+      TimeoutStopSec=30s
+      LimitNOFILE=10000
+
+      [Install]
+      WantedBy=multi-user.target
+    dest: /etc/systemd/system/grafana.service
+    mode: '0644'
+  when: (ansible_os_family == "RedHat" or ansible_distribution == "Amazon") and not (grafana_service_file.stat.exists | default(false)) and not (grafana_server_service_file.stat.exists | default(false))
+  register: grafana_service_created
+
+- name: Reload systemd daemon if service was created
+  ansible.builtin.systemd:
+    daemon_reload: yes
+  when: grafana_service_created.changed | default(false)
+
+- name: Find correct Grafana service name
+  ansible.builtin.set_fact:
+    grafana_service_name: >-
+      {% if ansible_os_family == "Debian" %}
+      grafana-server
+      {% elif grafana_server_service_file.stat.exists | default(false) %}
+      grafana-server
+      {% else %}
+      grafana
+      {% endif %}
+
+- name: Display service name being used
+  ansible.builtin.debug:
+    msg: "Using service name: {{ grafana_service_name }}"
+
+- name: Enable and start Grafana service
+  systemd:
+    name: "{{ grafana_service_name }}"
+    enabled: yes
+    state: started
+    daemon_reload: yes
+  register: grafana_service_start
+  ignore_errors: true
+
+- name: Check Grafana binary location if service failed
+  ansible.builtin.command: which grafana-server
+  register: grafana_binary_check
+  changed_when: false
+  failed_when: false
+  when: grafana_service_start.failed is defined and grafana_service_start.failed
+
+- name: Display Grafana binary path
+  ansible.builtin.debug:
+    msg: "Grafana binary found at: {{ grafana_binary_check.stdout }}"
+  when: grafana_binary_check.rc == 0
+
+- name: Run Grafana server manually (for debugging) if service start failed
+  ansible.builtin.shell: nohup /usr/sbin/grafana-server --config=/etc/grafana/grafana.ini --homepath=/usr/share/grafana > /var/log/grafana/manual_start.log 2>&1 &
+  args:
+    executable: /bin/bash
+  become: true
+  become_user: grafana
+  when: grafana_service_start.failed is defined and grafana_service_start.failed
+  ignore_errors: true

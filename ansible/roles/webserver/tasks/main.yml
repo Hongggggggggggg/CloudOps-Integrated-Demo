@@ -1,13 +1,35 @@
-- name: Install Apache
-  ansible.builtin.package:
+- name: Install Apache (Debian/Ubuntu)
+  ansible.builtin.apt:
+    name: apache2
+    state: present
+  when: ansible_os_family == "Debian"
+
+- name: Install Apache (RedHat/CentOS/Amazon Linux with yum)
+  ansible.builtin.yum:
     name: httpd
     state: present
+  when: (ansible_os_family == "RedHat" or ansible_distribution == "Amazon") and ansible_pkg_mgr == "yum"
 
-- name: Start and enable Apache
+- name: Install Apache (RedHat/CentOS/Amazon Linux with dnf)
+  ansible.builtin.dnf:
+    name: httpd
+    state: present
+    use_backend: dnf4
+  when: (ansible_os_family == "RedHat" or ansible_distribution == "Amazon") and ansible_pkg_mgr == "dnf"
+
+- name: Start and enable Apache (Debian/Ubuntu)
+  ansible.builtin.service:
+    name: apache2
+    state: started
+    enabled: true
+  when: ansible_os_family == "Debian"
+
+- name: Start and enable Apache (RedHat/CentOS/Amazon Linux)
   ansible.builtin.service:
     name: httpd
     state: started
     enabled: true
+  when: ansible_os_family == "RedHat" or ansible_distribution == "Amazon"
 
 - name: Create index.html
   ansible.builtin.copy:

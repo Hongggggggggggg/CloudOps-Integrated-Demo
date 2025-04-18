@@ -1,0 +1,62 @@
+---
+- name: Ensure required directories exist
+  file:
+    path: "{{ item }}"
+    state: directory
+    mode: '0755'
+  with_items:
+    - /opt/node_exporter
+    - /etc/node_exporter
+
+- name: Install required packages (Debian/Ubuntu)
+  ansible.builtin.apt:
+    name:
+      - wget
+      - tar
+    state: present
+  when: ansible_os_family == "Debian"
+
+- name: Install required packages (RedHat/CentOS/Amazon Linux with yum)
+  ansible.builtin.yum:
+    name:
+      - wget
+      - tar
+    state: present
+  when: (ansible_os_family == "RedHat" or ansible_distribution == "Amazon") and ansible_pkg_mgr == "yum"
+
+- name: Install required packages (RedHat/CentOS/Amazon Linux with dnf)
+  ansible.builtin.dnf:
+    name:
+      - wget
+      - tar
+    state: present
+    use_backend: dnf4
+  when: (ansible_os_family == "RedHat" or ansible_distribution == "Amazon") and ansible_pkg_mgr == "dnf"
+
+- name: Download and extract Node Exporter
+  unarchive:
+    src: https://github.com/prometheus/node_exporter/releases/download/v1.6.1/node_exporter-1.6.1.linux-amd64.tar.gz
+    dest: /tmp
+    remote_src: yes
+    creates: /tmp/node_exporter-1.6.1.linux-amd64
+
+- name: Copy Node Exporter binary
+  copy:
+    src: /tmp/node_exporter-1.6.1.linux-amd64/node_exporter
+    dest: /usr/local/bin/node_exporter
+    remote_src: yes
+    mode: '0755'
+
+- name: Create Node Exporter systemd service
+  template:
+    src: node_exporter.service.j2
+    dest: /etc/systemd/system/node_exporter.service
+    mode: '0644'
+  notify: restart node_exporter
+
+- name: Enable and start Node Exporter service
+  systemd:
+    name: node_exporter
+    enabled: yes
+    state: started
+    daemon_reload: yes
